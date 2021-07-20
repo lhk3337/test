@@ -3,7 +3,7 @@ const container = document.getElementById("root");
 let ajax = new XMLHttpRequest();
 const content = document.createElement("div");
 const NEWSURL = "https://api.hnpwa.com/v0/news/1.json";
-const CONTENT_URL = "https://api.hnpwa.com/v0/item/@id.json";
+const CONTENT_URL = "https://api.hnpwa.com/v0/item/$id.json";
 
 const getData = (url) => {
   ajax.open("GET", url, false);
@@ -33,13 +33,22 @@ const newsFeed = () => {
 const newsDetail = () => {
   const id = location.hash.substr(1);
 
-  const newsContent = getData(CONTENT_URL.replace("@id", id));
+  const newsContent = getData(CONTENT_URL.replace("$id", id));
   container.innerHTML = `
     <h1>${newsContent.title}</h1>
     <div><a href="/">목록으로</a></div>
   `;
 };
 
-window.addEventListener("hashchange", newsDetail);
+const router = () => {
+  const routePath = location.hash;
+  if (!routePath) {
+    newsFeed();
+  } else {
+    newsDetail();
+  }
+};
 
-newsFeed();
+window.addEventListener("hashchange", router);
+
+router();
