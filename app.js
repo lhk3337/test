@@ -2,11 +2,12 @@ const container = document.getElementById("root");
 
 let ajax = new XMLHttpRequest();
 const content = document.createElement("div");
-const NEWSURL = "https://api.hnpwa.com/v0/news/1.json";
+const NEWS_URL = "https://api.hnpwa.com/v0/news/1.json";
 const CONTENT_URL = "https://api.hnpwa.com/v0/item/$id.json";
 
 const store = {
   currentPage: 1,
+  feeds: [],
 };
 
 const getData = (url) => {
@@ -15,10 +16,19 @@ const getData = (url) => {
   return JSON.parse(ajax.response);
 };
 
+const makeFeeds = (feeds) => {
+  for (let i = 0; i < feeds.length; i++) {
+    feeds[i].read = false;
+  }
+  return feeds;
+};
+
 const newsFeed = () => {
   const newsList = [];
-  const newsFeed = getData(NEWSURL);
-
+  let newsFeed = store.feeds;
+  if (newsFeed.length === 0) {
+    newsFeed = store.feeds = makeFeeds(getData(NEWS_URL));
+  }
   let templete = `
     <div class="bg-gray-600 min-h-screen ">
       <div class="bg-white text-xl sticky top-0 w-full">
@@ -43,7 +53,9 @@ const newsFeed = () => {
   for (let i = (store.currentPage - 1) * 10; i < store.currentPage * 10; i++) {
     // 메인 화면 리스트
     newsList.push(`
-      <div class="p-6 bg-white mt-6 rounded-lg shadow-md transition-colors duration-500 hover:bg-green-100">
+      <div class="p-6 ${
+        newsFeed[i].read ? "bg-yellow-100" : "bg-white"
+      } mt-6 rounded-lg shadow-md transition-colors duration-500 hover:bg-green-100">
         <div class="flex">
           <div class="flex-auto">
             <a href = "#/show/${newsFeed[i].id}">${newsFeed[i].title}</a>
@@ -99,6 +111,14 @@ const newsDetail = () => {
       </div>
     </div>
   `;
+
+  for (let i = 0; i < store.feeds.length; i++) {
+    if (store.feeds[i].id === Number(id)) {
+      store.feeds[i].read = true;
+      break;
+    }
+  }
+
   const makeComment = (comments, called = 0) => {
     const commentString = [];
     for (let i = 0; i < comments.length; i++) {
