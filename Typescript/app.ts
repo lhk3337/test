@@ -1,11 +1,24 @@
-const container = document.getElementById("root");
+type Store = {
+  currentPage: number;
+  feeds: NewsFeed[];
+};
 
-let ajax = new XMLHttpRequest();
-const content = document.createElement("div");
+type NewsFeed = {
+  id: number;
+  title: string;
+  comments_count: string;
+  read?: boolean;
+  user: string;
+  points: number;
+  time_ago: string;
+};
+
+const container: HTMLElement | null = document.getElementById("root");
+let ajax: XMLHttpRequest = new XMLHttpRequest();
 const NEWS_URL = "https://api.hnpwa.com/v0/news/1.json";
 const CONTENT_URL = "https://api.hnpwa.com/v0/item/$id.json";
 
-const store = {
+const store: Store = {
   currentPage: 1,
   feeds: [],
 };
@@ -23,9 +36,17 @@ const makeFeeds = (feeds) => {
   return feeds;
 };
 
+const updateView = (html: string) => {
+  if (container != null) {
+    container.innerHTML = html;
+  } else {
+    console.error("최상위 데이터가 없어 UI를 진행하지 못합니다.");
+  }
+};
+
 const newsFeed = () => {
   const newsList = [];
-  let newsFeed = store.feeds;
+  let newsFeed: NewsFeed[] = store.feeds;
   if (newsFeed.length === 0) {
     newsFeed = store.feeds = makeFeeds(getData(NEWS_URL));
   }
@@ -82,7 +103,7 @@ const newsFeed = () => {
     store.currentPage < newsFeed.length / 10 ? store.currentPage + 1 : store.currentPage
   );
 
-  container.innerHTML = templete;
+  updateView(templete);
 };
 
 const newsDetail = () => {
@@ -138,8 +159,7 @@ const newsDetail = () => {
     }
     return commentString.join("");
   };
-
-  container.innerHTML = templete.replace("{{__comments__}}", makeComment(newsContent.comments));
+  updateView(templete.replace("{{__comments__}}", makeComment(newsContent.comments)));
 };
 
 const router = () => {
