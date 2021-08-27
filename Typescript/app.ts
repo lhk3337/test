@@ -3,14 +3,28 @@ type Store = {
   feeds: NewsFeed[];
 };
 
-type NewsFeed = {
+type News = {
   id: number;
+  time_ago: string;
   title: string;
+  url: string;
+  user: string;
+  content: string;
+};
+
+type NewsFeed = News & {
   comments_count: string;
   read?: boolean;
-  user: string;
   points: number;
-  time_ago: string;
+};
+
+type NewsDetail = News & {
+  comments: NewsComment[];
+};
+
+type NewsComment = News & {
+  comments: NewsComment[];
+  level: number;
 };
 
 const container: HTMLElement | null = document.getElementById("root");
@@ -23,20 +37,21 @@ const store: Store = {
   feeds: [],
 };
 
-const getData = (url) => {
+const getData = <AjaxResponse>(url: string): AjaxResponse => {
   ajax.open("GET", url, false);
   ajax.send();
+
   return JSON.parse(ajax.response);
 };
 
-const makeFeeds = (feeds) => {
+const makeFeeds = (feeds: NewsFeed[]): NewsFeed[] => {
   for (let i = 0; i < feeds.length; i++) {
     feeds[i].read = false;
   }
   return feeds;
 };
 
-const updateView = (html: string) => {
+const updateView = (html: string): void => {
   if (container != null) {
     container.innerHTML = html;
   } else {
@@ -44,11 +59,11 @@ const updateView = (html: string) => {
   }
 };
 
-const newsFeed = () => {
+const newsFeed = (): void => {
   const newsList = [];
   let newsFeed: NewsFeed[] = store.feeds;
   if (newsFeed.length === 0) {
-    newsFeed = store.feeds = makeFeeds(getData(NEWS_URL));
+    newsFeed = store.feeds = makeFeeds(getData<NewsFeed[]>(NEWS_URL));
   }
   let templete = `
     <div class="bg-gray-600 min-h-screen ">
@@ -97,18 +112,18 @@ const newsFeed = () => {
   }
 
   templete = templete.replace("{{__news_feed__}}", newsList.join(""));
-  templete = templete.replace("{{__prev_page__}}", store.currentPage > 1 ? store.currentPage - 1 : 1);
+  templete = templete.replace("{{__prev_page__}}", String(store.currentPage > 1 ? store.currentPage - 1 : 1));
   templete = templete.replace(
     "{{__next_page__}}",
-    store.currentPage < newsFeed.length / 10 ? store.currentPage + 1 : store.currentPage
+    String(store.currentPage < newsFeed.length / 10 ? store.currentPage + 1 : store.currentPage)
   );
 
   updateView(templete);
 };
 
-const newsDetail = () => {
+const newsDetail = (): void => {
   const id = location.hash.substr(7); // location.hash -> #/show/28004707 | location.hash.substr(7) ->28004707
-  const newsContent = getData(CONTENT_URL.replace("$id", id));
+  const newsContent = getData<NewsDetail>(CONTENT_URL.replace("$id", id));
   let templete = `
     <div class="bg-gray-600 min-h-screen pb-8">
       <div class="bg-white text-xl">
@@ -140,29 +155,29 @@ const newsDetail = () => {
     }
   }
 
-  const makeComment = (comments, called = 0) => {
-    const commentString = [];
-    for (let i = 0; i < comments.length; i++) {
-      commentString.push(`
-        <div style="padding-left:${called * 40}px;" class="mt-4">
-          <div class="text-gray-400">
-            <i class="fa fa-sort-up mr-2"></i>
-            <strong>${comments[i].user}</strong> ${comments[i].time_ago}
-          </div>
-          <p class="text-gray-700">${comments[i].content}</p>
-        </div>
-      `);
-
-      if (comments[i]) {
-        commentString.push(makeComment(comments[i].comments, called + 1));
-      }
-    }
-    return commentString.join("");
-  };
   updateView(templete.replace("{{__comments__}}", makeComment(newsContent.comments)));
 };
+const makeComment = (comments: NewsComment[]): string => {
+  const commentString = [];
+  for (let i = 0; i < comments.length; i++) {
+    const comment: NewsComment = comments[i];
+    commentString.push(`
+      <div style="padding-left:${comment.level}px;" class="mt-4">
+        <div class="text-gray-400">
+          <i class="fa fa-sort-up mr-2"></i>
+          <strong>${comment.user}</strong> ${comment.time_ago}
+        </div>
+        <p class="text-gray-700">${comment.content}</p>
+      </div>
+    `);
 
-const router = () => {
+    if (comment) {
+      commentString.push(makeComment(comment.comments));
+    }
+  }
+  return commentString.join("");
+};
+const router = (): void => {
   const routePath = location.hash;
   if (routePath === "") {
     newsFeed();
